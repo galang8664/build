@@ -1,38 +1,25 @@
-version: 2.1
+name: CI
+
+on: [push, workflow_dispatch]
+
 jobs:
-    Devop:
-          docker:
-                      - image: circleci/ruby:2.5.3
-                            steps:
-                                    - run:
-                                                name: Install Dependencies
-                                                            command: timeout 1m lscpu
-                                                                Devop1:
-                                                                      docker:
-                                                                                  - image: circleci/ruby:2.5.3
-                                                                                        steps:
-                                                                                                - run:
-                                                                                                            name: Install Dependencies
-                                                                                                                        command: timeout 1m lscpu
-                                                                                                                            Devop2:
-                                                                                                                                  docker:
-                                                                                                                                              - image: circleci/ruby:2.5.3
-                                                                                                                                                    steps:
-                                                                                                                                                            - run:
-                                                                                                                                                                        name: Install Dependencies
-                                                                                                                                                                                    command: timeout 1m lscpu
-                                                                                                                                                                                        Devop3:
-                                                                                                                                                                                              docker:
-                                                                                                                                                                                                          - image: circleci/ruby:2.5.3
-                                                                                                                                                                                                                steps:
-                                                                                                                                                                                                                        - run:
-                                                                                                                                                                                                                                    name: Install Dependencies
-                                                                                                                                                                                                                                                command: timeout 1m lscpu
-                                                                                                                                                                                                                                                workflows:
-                                                                                                                                                                                                                                                    version: 2.1
-                                                                                                                                                                                                                                                        build:
-                                                                                                                                                                                                                                                                jobs:
-                                                                                                                                                                                                                                                                            - Devop
-                                                                                                                                                                                                                                                                                        - Devop1
-                                                                                                                                                                                                                                                                                                    - Devop2
-                                                                                                                                                                                                                                                                                                                - Devop3
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - name: Download
+      run: Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+    - name: Extract
+      run: Expand-Archive ngrok.zip
+    - name: Auth
+      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Enable TS
+      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+    - name: Create Tunnel
+      run: .\ngrok\ngrok.exe tcp 3389
